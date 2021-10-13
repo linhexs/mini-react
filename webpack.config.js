@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const path = require('path')
 
 module.exports = {
   entry: {
@@ -28,6 +29,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       title: 'React',
+      template: path.join(__dirname, 'src/index.html') // 源模板文件
     }),
   ],
 }
