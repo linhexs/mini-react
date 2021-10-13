@@ -8,4 +8,6 @@ const element = (
   </div>
 )
 
+console.log(element)
+
 React.render(element, document.getElementById('root'))
