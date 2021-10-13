@@ -60,62 +60,7 @@ function workLoop(deadline) {
 // 空闲时间执行任务
 requestIdleCallback(workLoop)
 
-/**
- * 处理工作单元，返回下一个单元事件
- * @param {*} fiber 
- */
+// 执行单元事件，返回下一个单元事件
 function performUnitOfWork(fiber) {
-  // 如果fiber上没有dom节点，为其创建一个
-  if (!fiber.dom) {
-    fiber.dom = createDom(fiber)
-  }
-
-  // 如果fiber有父节点，将fiber.dom添加到父节点
-  if (fiber.parent) {
-    fiber.parent.dom.appendChild(fiber.dom)
-  }
-
-  // 获取到当前fiber的孩子节点
-  const elements = fiber.props.children
-  // 索引
-  let index = 0
-  // 上一个兄弟节点
-  let prevSibling = null
-
-  // 遍历孩子节点
-  while (index < elements.length) {
-    const element = elements[index]
-    // 创建fiber
-    const newFiber = {
-      type: element.type,
-      props: element.props,
-      parent: fiber,
-      dom: null,
-    }
-
-    // 将第一个孩子节点设置为 fiber 的子节点
-    if (index === 0) {
-      fiber.child = newFiber
-    } else {
-      // 第一个之外的子节点设置为第一个子节点的兄弟节点
-      prevSibling.sibling = newFiber
-    }
-
-    prevSibling = newFiber
-    index++
-  }
-
-  // 寻找下一个孩子节点，如果有返回
-  if (fiber.child) {
-    return fiber.child
-  }
-  let nextFiber = fiber
-  while (nextFiber) {
-    // 如果有兄弟节点，返回兄弟节点
-    if (nextFiber.sibling) {
-      return nextFiber.sibling
-    }
-    // 否则返回父节点
-    nextFiber = nextFiber.parent
-  }
+  // TODO
 }
