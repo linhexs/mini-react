@@ -3,6 +3,8 @@
 
 // 下一个功能单元
 let nextUnitOfWork = null
+// 根节点
+let wipRoot = null
 
 /**
  * 将虚拟 DOM 转换为真实 DOM 并添加到容器中
@@ -10,13 +12,15 @@ let nextUnitOfWork = null
  * @param {container} 真实 DOM
  */
 export function render(element, container) {
-  // 将根节点设置为第一个将要工作单元
-  nextUnitOfWork = {
+  // 根节点
+  wipRoot = {
     dom: container,
     props: {
       children: [element],
     },
   }
+  // 将根节点设置为下一个将要工作单元
+  nextUnitOfWork = wipRoot
 }
 
 /**
@@ -39,6 +43,32 @@ function createDom(fiber) {
 }
 
 /**
+ * 处理提交的fiber树
+ * @param {*} fiber 
+ * @returns 
+ */
+function commitWork(fiber){
+  if (!fiber) {
+    return
+  }
+  const domParent = fiber.parent.dom
+  // 将自己点添加到父节点下
+  domParent.appendChild(fiber.dom)
+  // 渲染子节点
+  commitWork(fiber.child)
+  // 渲染兄弟节点
+  commitWork(fiber.sibling)
+}
+
+/**
+ * 提交任务，将fiber tree 渲染为真实 DOM
+ */
+function commitRoot(){
+  commitWork(wipRoot.child)
+  wipRoot = null
+}
+
+/**
  * 工作循环
  * @param {*} deadline 截止时间
  */
@@ -54,6 +84,12 @@ function workLoop(deadline) {
     // 当前帧空余时间要没了，停止工作循环
     shouldYield = deadline.timeRemaining() < 1
   }
+
+  // 没有下一个工作单元，提交当前fiber树
+  if (!nextUnitOfWork && wipRoot) {
+    commitRoot()
+  }
+
   // 空闲时间执行任务
   requestIdleCallback(workLoop)
 }
@@ -68,11 +104,6 @@ function performUnitOfWork(fiber) {
   // 如果fiber上没有dom节点，为其创建一个
   if (!fiber.dom) {
     fiber.dom = createDom(fiber)
-  }
-
-  // 如果fiber有父节点，将fiber.dom添加到父节点
-  if (fiber.parent) {
-    fiber.parent.dom.appendChild(fiber.dom)
   }
 
   // 获取到当前fiber的孩子节点
