@@ -140,8 +140,6 @@ function commitWork(fiber) {
     )
   }
 
-  // // 将自己点添加到父节点下
-  // domParent.appendChild(fiber.dom)
   // 渲染子节点
   commitWork(fiber.child)
   // 渲染兄弟节点
