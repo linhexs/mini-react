@@ -140,8 +140,6 @@ function commitWork(fiber) {
     )
   }
 
-  // // 将自己点添加到父节点下
-  // domParent.appendChild(fiber.dom)
   // 渲染子节点
   commitWork(fiber.child)
   // 渲染兄弟节点
@@ -239,6 +237,7 @@ function reconcileChildren(wipFiber, elements) {
       deletions.push(oldFiber)
     }
 
+    // 处理老fiber的兄弟节点
     if (oldFiber) {
       oldFiber = oldFiber.sibling
     }
