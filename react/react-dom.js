@@ -96,7 +96,7 @@ function performUnitOfWork(fiber) {
     // 将第一个孩子节点设置为 fiber 的子节点
     if (index === 0) {
       fiber.child = newFiber
-    } else {
+    } else if(element) {
       // 第一个之外的子节点设置为第一个子节点的兄弟节点
       prevSibling.sibling = newFiber
     }
