@@ -93,9 +93,9 @@ function updateDom(dom, prevProps, nextProps) {
     .forEach(name => {
       dom[name] = nextProps[name]
     })
-    
-    // 添加新的事件处理
-    Object.keys(nextProps)
+
+  // 添加新的事件处理
+  Object.keys(nextProps)
     .filter(isEvent)
     .filter(isNew(prevProps, nextProps))
     .forEach(name => {
@@ -110,6 +110,19 @@ function updateDom(dom, prevProps, nextProps) {
 }
 
 /**
+ * 删除情况下，不断的向下找，直到找到有dom的子节点
+ * @param {*} fiber 
+ * @param {*} domParent 
+ */
+function commitDeletion(fiber, domParent) {
+  if (fiber.dom) {
+    domParent.removeChild(fiber.dom)
+  } else {
+    commitDeletion(fiber.child, domParent)
+  }
+}
+
+/**
  * 处理提交的fiber树
  * @param {*} fiber 
  * @returns 
@@ -118,7 +131,13 @@ function commitWork(fiber) {
   if (!fiber) {
     return
   }
-  const domParent = fiber.parent.dom
+  let domParentFiber = fiber.parent
+  // 一直向上找，直到找到有dom的节点
+  while (!domParentFiber.dom) {
+    domParentFiber = domParentFiber.parent
+  }
+  const domParent = domParentFiber.dom
+
   // 处理新增节点标记
   if (
     fiber.effectTag === "PLACEMENT" &&
@@ -127,7 +146,7 @@ function commitWork(fiber) {
     domParent.appendChild(fiber.dom)
     // 处理删除节点标记
   } else if (fiber.effectTag === "DELETION") {
-    domParent.removeChild(fiber.dom)
+    commitDeletion(fiber, domParent)
     // 处理更新属性
   } else if (
     fiber.effectTag === "UPDATE" &&
@@ -254,11 +273,12 @@ function reconcileChildren(wipFiber, elements) {
     index++
   }
 }
+
 /**
- * 处理工作单元，返回下一个单元事件
+ * 协调子节点
  * @param {*} fiber 
  */
-function performUnitOfWork(fiber) {
+function updateHostComponent(fiber) {
   // 如果fiber上没有dom节点，为其创建一个
   if (!fiber.dom) {
     fiber.dom = createDom(fiber)
@@ -267,6 +287,85 @@ function performUnitOfWork(fiber) {
   // 获取到当前fiber的孩子节点
   const elements = fiber.props.children
   reconcileChildren(fiber, elements)
+}
+
+let wipFiber = null
+let hookIndex = null
+
+/**
+ * 函数组件处理
+ * @param {*} fiber 
+ */
+function updateFunctionComponent(fiber) {
+  wipFiber = fiber
+  hookIndex = 0
+  wipFiber.hooks = []
+  const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
+/**
+ * 类组件处理
+ * @param {*} fiber 
+ */
+function updateClassComponent(fiber){
+  const {type, props} = fiber;
+  const children = [new type(props).render()];
+  reconcileChildren(fiber, children)
+}
+
+/**
+ * @param {*} initial 传进来的初始值
+ * @returns 
+ */
+export function useState(initial) {
+  // 检查是否有旧的hooks
+  const oldHook =
+    wipFiber.alternate &&
+    wipFiber.alternate.hooks &&
+    wipFiber.alternate.hooks[hookIndex]
+  // 如果有旧的，就复制到新的，如果没有初始化
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  }
+
+  const actions = oldHook ? oldHook.queue : []
+
+  actions.forEach(action => {
+    hook.state = typeof action === 'function' ? action(hook.state) : action
+  })
+
+  // 设置hooks状态
+  const setState = action => {
+    hook.queue.push(action)
+    // 设置一个新的正在进行的工作根作为下一个工作单元，这样工作循环就可以开始一个新的渲染阶段
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot,
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipFiber.hooks.push(hook)
+  hookIndex++
+  return [hook.state, setState]
+}
+
+/**
+ * 处理工作单元，返回下一个工作单元
+ * @param {*} fiber 
+ */
+function performUnitOfWork(fiber) {
+  // 函数组件类组件处理
+  if (fiber.type && typeof fiber.type === 'function') {
+    fiber.type.prototype.isReactComponent ? updateClassComponent(fiber) : updateFunctionComponent(fiber)
+  } else {
+    // 更新普通节点
+    updateHostComponent(fiber)
+  }
 
   // 寻找下一个孩子节点，如果有返回
   if (fiber.child) {

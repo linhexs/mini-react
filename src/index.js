@@ -1,21 +1,16 @@
 // src/index
-import React from '../react';
-
-const container = document.getElementById("root")
-
-const updateValue = e => {
-    rerender(e.target.value)
+import React from '../react'
+class Counter extends React.Component {
+    render() {
+        return (
+            <div>
+                <h1>我是</h1>
+                <h2>class组件</h2>
+            </div>
+        )
+    }
 }
 
-const rerender = value => {
-    const element = (
-        <div>
-            <input onInput={updateValue} value={value} />
-            <h2>Hello {value}</h2>
-        </div>
-    )
-    React.render(element, container)
-}
+const element = <Counter />
 
-rerender("World")
-
+React.render(element, document.getElementById("root"))
