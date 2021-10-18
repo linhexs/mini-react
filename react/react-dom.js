@@ -288,13 +288,59 @@ function updateHostComponent(fiber) {
   reconcileChildren(fiber, elements)
 }
 
+let wipFiber = null
+let hookIndex = null
+
 /**
  * 函数组件处理
  * @param {*} fiber 
  */
 function updateFunctionComponent(fiber) {
+  wipFiber = fiber
+  hookIndex = 0
+  wipFiber.hooks = []
   const children = [fiber.type(fiber.props)]
   reconcileChildren(fiber, children)
+}
+
+/**
+ * @param {*} initial 传进来的初始值
+ * @returns 
+ */
+export function useState(initial) {
+  // 检查是否有旧的hooks
+  const oldHook =
+    wipFiber.alternate &&
+    wipFiber.alternate.hooks &&
+    wipFiber.alternate.hooks[hookIndex]
+  // 如果有旧的，就复制到新的，如果没有初始化
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  }
+
+  const actions = oldHook ? oldHook.queue : []
+
+  actions.forEach(action => {
+    hook.state = typeof action === 'function' ? action(hook.state) : action
+  })
+
+  // 设置hooks状态
+  const setState = action => {
+    hook.queue.push(action)
+    // 设置一个新的正在进行的工作根作为下一个工作单元，这样工作循环就可以开始一个新的渲染阶段
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot,
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipFiber.hooks.push(hook)
+  hookIndex++
+  return [hook.state, setState]
 }
 
 /**
