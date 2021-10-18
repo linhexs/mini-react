@@ -254,7 +254,7 @@ function reconcileChildren(wipFiber, elements) {
   }
 }
 /**
- * 处理工作单元，返回下一个单元事件
+ * 处理工作单元，返回下一个工作单元
  * @param {*} fiber 
  */
 function performUnitOfWork(fiber) {
