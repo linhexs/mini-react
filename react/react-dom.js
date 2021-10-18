@@ -93,9 +93,9 @@ function updateDom(dom, prevProps, nextProps) {
     .forEach(name => {
       dom[name] = nextProps[name]
     })
-    
-    // 添加新的事件处理
-    Object.keys(nextProps)
+
+  // 添加新的事件处理
+  Object.keys(nextProps)
     .filter(isEvent)
     .filter(isNew(prevProps, nextProps))
     .forEach(name => {
@@ -110,6 +110,19 @@ function updateDom(dom, prevProps, nextProps) {
 }
 
 /**
+ * 删除情况下，不断的向下找，直到找到有dom的子节点
+ * @param {*} fiber 
+ * @param {*} domParent 
+ */
+function commitDeletion(fiber, domParent) {
+  if (fiber.dom) {
+    domParent.removeChild(fiber.dom)
+  } else {
+    commitDeletion(fiber.child, domParent)
+  }
+}
+
+/**
  * 处理提交的fiber树
  * @param {*} fiber 
  * @returns 
@@ -118,7 +131,13 @@ function commitWork(fiber) {
   if (!fiber) {
     return
   }
-  const domParent = fiber.parent.dom
+  let domParentFiber = fiber.parent
+  // 一直向上找，直到找到有dom的节点
+  while (!domParentFiber.dom) {
+    domParentFiber = domParentFiber.parent
+  }
+  const domParent = domParentFiber.dom
+
   // 处理新增节点标记
   if (
     fiber.effectTag === "PLACEMENT" &&
@@ -127,7 +146,7 @@ function commitWork(fiber) {
     domParent.appendChild(fiber.dom)
     // 处理删除节点标记
   } else if (fiber.effectTag === "DELETION") {
-    domParent.removeChild(fiber.dom)
+    commitDeletion(fiber, domParent)
     // 处理更新属性
   } else if (
     fiber.effectTag === "UPDATE" &&
@@ -253,11 +272,12 @@ function reconcileChildren(wipFiber, elements) {
     index++
   }
 }
+
 /**
- * 处理工作单元，返回下一个工作单元
+ * 协调子节点
  * @param {*} fiber 
  */
-function performUnitOfWork(fiber) {
+function updateHostComponent(fiber) {
   // 如果fiber上没有dom节点，为其创建一个
   if (!fiber.dom) {
     fiber.dom = createDom(fiber)
@@ -266,6 +286,31 @@ function performUnitOfWork(fiber) {
   // 获取到当前fiber的孩子节点
   const elements = fiber.props.children
   reconcileChildren(fiber, elements)
+}
+
+/**
+ * 函数组件处理
+ * @param {*} fiber 
+ */
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
+/**
+ * 处理工作单元，返回下一个工作单元
+ * @param {*} fiber 
+ */
+function performUnitOfWork(fiber) {
+  // 判断是否为函数
+  const isFunctionComponent =
+    fiber.type instanceof Function
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber)
+  } else {
+    // 更新普通节点
+    updateHostComponent(fiber)
+  }
 
   // 寻找下一个孩子节点，如果有返回
   if (fiber.child) {

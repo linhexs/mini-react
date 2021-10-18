@@ -1,21 +1,12 @@
 // src/index
-import React from '../react';
+import React from '../react'
 
-const container = document.getElementById("root")
-
-const updateValue = e => {
-    rerender(e.target.value)
+function App(props){
+    return <h1>H1,{props.name}!</h1>
 }
 
-const rerender = value => {
-    const element = (
-        <div>
-            <input onInput={updateValue} value={value} />
-            <h2>Hello {value}</h2>
-        </div>
-    )
-    React.render(element, container)
-}
+const element = (<App name='foo'></App>)
 
-rerender("World")
+React.render(element, document.getElementById("root"))
+
 
