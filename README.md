@@ -1,3 +1,5 @@
+## mini-react
+
 实现目标：
 
 1. createElement；
@@ -9,3 +11,19 @@
 7. 函数组件；
 8. hooks；
 8. 类组件；
+
+
+
+## **启动**
+
+1、安装依赖
+
+```
+npm install
+```
+
+2、启动
+
+```
+npm run start
+```
