@@ -1,5 +1,7 @@
 ## mini-react
 
+讲解文章：https://juejin.cn/post/7023319961883901988
+
 实现目标：
 
 1. createElement；
